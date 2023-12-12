@@ -7,6 +7,7 @@ const browser = require('./browser');
 const before = require('./before');
 const after = require('./after');
 const utils = require('./utils');
+const internal = require('stream');
 
 const url =
 	'https://lucky-jet.gamedev-atech.cc/?exitUrl=null&language=uk&b=8137c4e5b3acab20ae1f3beb43efac9a78fcaa7c4a27cd6e8a02bf5074ba8de9857cf583774d79836cd757f40d50d77dd3b276632df2208273725233bae66c554f83a1d1981b5f2fb0b84ed7222c2f5399a3c25fb5752c3859468772cedb1166b93c6f9070.80429a59887f8724d9270af78d143b0a';
@@ -25,6 +26,7 @@ app.use(express.json());
 
 let p = {};
 let coefficients = [];
+let isStart = false;
 
 const playersPath = 'players.json';
 const coefficientsPath = 'coefficients.json';
@@ -91,102 +93,106 @@ const luckyParser = async () => {
 			return `rgba(${random()}, ${random()}, ${random()}, 1)`;
 		};
 
-		// const interval = setInterval(async () => {
-		// 	if (!isLockInterval) {
-		// 		const date = new Date();
-		// 		console.log({
-		// 			hour: date.getHours(),
-		// 			minutes: date.getMinutes(),
-		// 			seconds: date.getSeconds(),
-		// 		});
-		// 		console.log({ roundNumber });
-		// 		try {
-		// 			isLockInterval = true;
-		// 			await before.roundStarted(page, betButtons);
-		// 			roundNumber++;
+		const interval = setInterval(async () => {
+			if (!isLockInterval) {
+				const date = new Date();
+				console.log({
+					hour: date.getHours(),
+					minutes: date.getMinutes(),
+					seconds: date.getSeconds(),
+				});
+				console.log({ roundNumber });
+				try {
+					isLockInterval = true;
+					await before.roundStarted(page, betButtons);
+					roundNumber++;
 
-		// 			//if (roundNumber >= 100) throw new Error('Reload');
+					//if (roundNumber >= 100) throw new Error('Reload');
+					if (!isStart) {
+						page.reload();
+						isStart = true;
+					}
+					if (roundNumber && (!isStarted || new Date() - deltaTime[0] > 6000)) {
+						fs.access(playersPath, fs.constants.F_OK, err => {
+							if (err) {
+								writeFile(playersPath, JSON.stringify({}));
+							} else {
+								readFile(playersPath, data => {
+									if (!Object.keys(p).length && data && JSON.parse(data)) {
+										p = JSON.parse(data);
+									}
+								});
+							}
+						});
 
-		// 			if (roundNumber && (!isStarted || new Date() - deltaTime[0] > 6000)) {
-		// 				fs.access(playersPath, fs.constants.F_OK, err => {
-		// 					if (err) {
-		// 						writeFile(playersPath, JSON.stringify({}));
-		// 					} else {
-		// 						readFile(playersPath, data => {
-		// 							if (!Object.keys(p).length && data && JSON.parse(data)) {
-		// 								p = JSON.parse(data);
-		// 							}
-		// 						});
-		// 					}
-		// 				});
+						fs.access(coefficientsPath, fs.constants.F_OK, err => {
+							if (err) {
+								writeFile(coefficientsPath, JSON.stringify([]));
+							} else {
+								readFile(coefficientsPath, data => {
+									if (!coefficients.length && data && JSON.parse(data).length) {
+										coefficients = [...JSON.parse(data)];
+									}
+								});
+							}
+						});
 
-		// 				fs.access(coefficientsPath, fs.constants.F_OK, err => {
-		// 					if (err) {
-		// 						writeFile(coefficientsPath, JSON.stringify([]));
-		// 					} else {
-		// 						readFile(coefficientsPath, data => {
-		// 							if (!coefficients.length && data && JSON.parse(data).length) {
-		// 								coefficients = [...JSON.parse(data)];
-		// 							}
-		// 						});
-		// 					}
-		// 				});
+						await after.roundEnd(page, (player, index, length) => {
+							const name = player.name;
+							const date = new Date();
 
-		// 				await after.roundEnd(page, (player, index, length) => {
-		// 					const name = player.name;
-		// 					const date = new Date();
-
-		// 					if (!p[name] && player.name.length >= 3) {
-		// 						p[name] = {
-		// 							avatar: randomRGBA(),
-		// 							name,
-		// 							games: [],
-		// 						};
-		// 					}
-		// 					if (p[name]) {
-		// 						p[name].games.push({
-		// 							betNumber: player.bet,
-		// 							betString: player.betString,
-		// 							x: player.x,
-		// 							xNumber: player.xNumber,
-		// 							roundX: player.roundX,
-		// 							betWin: player.betWin,
-		// 							date: {
-		// 								year: date.getFullYear(),
-		// 								month: date.getMonth(),
-		// 								date: date.getDate(),
-		// 								day: date.getDay(),
-		// 								hours: date.getHours(),
-		// 								minutes: date.getMinutes(),
-		// 								seconds: date.getSeconds(),
-		// 							},
-		// 						});
-		// 					}
-		// 					if (index === length - 1) {
-		// 						console.log(new Date() - deltaTime[0]);
-		// 						coefficients.unshift(player.roundX);
-		// 						writeFile(coefficientsPath, JSON.stringify(coefficients));
-		// 						writeFile(playersPath, JSON.stringify(p));
-		// 						deltaTime.unshift(new Date());
-		// 						if (deltaTime.length > 5) deltaTime.pop();
-		// 						console.log(player.roundX);
-		// 					}
-		// 				});
-		// 				isStarted = true;
-		// 			}
-		// 		} catch (e) {
-		// 			console.log('client_loop: send disconnect: Connection reset');
-		// 			console.log(e);
-		// 			//utils.watchReload();
-		// 		}
-		// 		unlockNumber = 0;
-		// 		isLockInterval = false;
-		// 	}
-		// }, 1);
+							if (!p[name] && player.name.length >= 3) {
+								p[name] = {
+									avatar: randomRGBA(),
+									name,
+									games: [],
+								};
+							}
+							if (p[name]) {
+								p[name].games.push({
+									betNumber: player.bet,
+									betString: player.betString,
+									x: player.x,
+									xNumber: player.xNumber,
+									roundX: player.roundX,
+									betWin: player.betWin,
+									date: {
+										year: date.getFullYear(),
+										month: date.getMonth(),
+										date: date.getDate(),
+										day: date.getDay(),
+										hours: date.getHours(),
+										minutes: date.getMinutes(),
+										seconds: date.getSeconds(),
+									},
+								});
+							}
+							if (index === length - 1) {
+								console.log(new Date() - deltaTime[0]);
+								coefficients.unshift(player.roundX);
+								writeFile(coefficientsPath, JSON.stringify(coefficients));
+								writeFile(playersPath, JSON.stringify(p));
+								deltaTime.unshift(new Date());
+								if (deltaTime.length > 5) deltaTime.pop();
+								console.log(player.roundX);
+							}
+						});
+						isStarted = true;
+					}
+				} catch (e) {
+					console.log('client_loop: send disconnect: Connection reset');
+					console.log(e);
+					// utils.watchReload();
+				}
+				unlockNumber = 0;
+				isLockInterval = false;
+			}
+		}, 1);
 	} catch (e) {
+		clearInterval(interval);
 		console.log(e);
 		console.log('App crashed');
-		//utils.watchReload();
+		// utils.watchReload();
 	}
 };
 

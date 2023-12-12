@@ -6,6 +6,7 @@ const getPlayerNames = async (page, players, callback) => {
 				const betEl = player.querySelector('.sc-ACYlI');
 				const xEl = player.querySelector('.sc-fLcnxK');
 				const winEl = document.querySelector('.sc-fFRahO');
+				console.log(nameEl);
 
 				let name = '0';
 				let bet = '0';

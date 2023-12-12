@@ -1,27 +1,28 @@
-const chromium = require('chrome-aws-lambda');
+// const chromium = require('chrome-aws-lambda');
+const puppeteer = require('puppeteer');
 require('dotenv').config();
 
 const launch = async () => {
-	const browser = await chromium.puppeteer.launch({
+	const browser = await puppeteer.launch({
 		args: [
 			'--no-sandbox',
 			'--disable-setuid-sandbox',
-			// '--disable-dev-shm-usage',
-			// '--disable-accelerated-2d-canvas',
-			// '--no-first-run',
+			'--disable-dev-shm-usage',
+			'--disable-accelerated-2d-canvas',
+			'--no-first-run',
 			'--no-zygote',
-			// '--start-maximized',
-			'--single-process',
-			// '--disable-gpu',
-			// '--display=:0',
+			'--start-maximized',
+			// '--single-process',
+			'--disable-gpu',
+			'--display=:0',
 		],
-		defaultViewport: chromium.defaultViewport,
+		defaultViewport: puppeteer.defaultViewport,
 		// executablePath: await chromium.executablePath,
 		executablePath:
 			process.env.NODE_ENV === 'production'
 				? process.env.PUPPETEER_EXECUTABLE_PATH
-				: await chromium.executablePath,
-		headless: chromium.headless,
+				: puppeteer.executablePath(),
+		headless: false,
 		ignoreHTTPSErrors: false,
 		protocolTimeout: 1000000,
 	});
@@ -50,9 +51,8 @@ const createPage = async (browser, url) => {
 	try {
 		await page.setDefaultNavigationTimeout(6000000);
 	} catch (error) {
-		await page.setDefaultNavigationTimeout(6000000);
+		console.log(e);
 	}
-
 	await page.goto(url);
 
 	return page;

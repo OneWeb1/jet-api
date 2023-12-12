@@ -109,7 +109,9 @@ const luckyParser = async () => {
 
 					//if (roundNumber >= 100) throw new Error('Reload');
 					if (!isStart) {
-						page.reload();
+						setTimeout(() => {
+							page.reload();
+						}, 5000);
 						isStart = true;
 					}
 					if (roundNumber && (!isStarted || new Date() - deltaTime[0] > 6000)) {

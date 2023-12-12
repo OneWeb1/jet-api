@@ -269,7 +269,7 @@ const launchBrowser = async () => {
 		],
 		defaultViewport: chromium.defaultViewport,
 		executablePath: await chromium.executablePath,
-		headless: chromium.headless,
+		headless: 'new' || chromium.headless,
 		ignoreHTTPSErrors: false,
 		protocolTimeout: 1000000,
 	});

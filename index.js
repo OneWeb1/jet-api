@@ -46,6 +46,11 @@ app.get('/', (req, res) => {
 	res.send('Working...');
 });
 
+app.get('/start', async (req, res) => {
+	await luckyParser();
+	res.send('Working...');
+});
+
 app.get('/players', (req, res) => {
 	fs.access(playersPath, fs.constants.F_OK, err => {
 		if (err) {

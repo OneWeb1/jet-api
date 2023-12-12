@@ -35,7 +35,11 @@ const initSumBets = async page => {
 
 const configureBets = async page => {
 	let is = false;
-	await page.waitForSelector(selector, { timeout: 39000000 });
+	try {
+		await page.waitForSelector(selector, { timeout: 39000000 });
+	} catch (e) {
+		await page.reload();
+	}
 	await page.evaluate(() => {
 		const inputs = document.querySelectorAll('#coef-input');
 		const checkboxes = document.querySelectorAll('.iJnjYA');
